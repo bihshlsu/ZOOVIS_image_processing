@@ -1,0 +1,28 @@
+function [img] = binary_cropped( imgTemp )
+%UNTITLED3 Summary of this function goes here
+%   Detailed explanation goes here
+level = graythresh(imgTemp);
+BW1 = im2bw(imgTemp,level);
+%BW2 = imfill(BW1, 'holes');
+%convert object into white
+idx1 = BW1 == 0;
+idx2 = BW1 == 1;
+BW1(idx1) = 1;
+BW1(idx2) = 0;
+
+%close white areas for small objects
+S1 = regionprops(BW1, 'basic');
+temp = [S1.Area];
+[area_thresh, idx3] = max(temp);
+img1 = imcrop(BW1, S1(idx3).BoundingBox);
+img2 = imcrop(imgTemp, S1(idx3).BoundingBox);
+img1 = bwareaopen(img1, area_thresh);
+img1 = imfill(img1, 'holes');
+idx1 = img1== 0;
+idx2 = img1== 1;
+
+img = img2;
+%img = img1;
+img(idx1)=255;
+%img(idx2)=0;
+end
