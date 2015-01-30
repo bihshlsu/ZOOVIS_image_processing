@@ -1,0 +1,31 @@
+function [ svm, hogFeatureSize, cellSize ] = svm_cop_classifier( trainingImages, trainingLabels )
+cellSize = [15 15];
+img = imread(trainingImages{1, 1});
+img = binary_cropped(img);
+img = imresize(img,[150 150]);
+[hog_8x8, ~] = extractHOGFeatures(img,'CellSize',cellSize);
+hogFeatureSize = length(hog_8x8);
+[nrow, ncol] = size(trainingImages);
+
+for d = 1:ncol
+
+    % Pre-allocate trainingFeatures array
+    trainingFeatures  = zeros(nrow,hogFeatureSize,'single');
+
+    % Extract HOG features from each training image. trainingImages
+    % contains both positive and negative image samples.
+    for i = 1:nrow
+        img = imread(trainingImages{i,d});
+        img = binary_cropped(img);
+        img = imresize(img, [150 150]);
+        trainingFeatures(i,:) = extractHOGFeatures(double(img),'CellSize',cellSize);
+    end
+    trainingFeatures = double(trainingFeatures);
+    % Train a classifier for a group. Each row of trainingFeatures contains
+    % the HOG features extracted for a single training image. The
+    % trainingLabels indicate if the features are extracted from positive
+    % (true) or negative (false) training images.
+    svm{d} = svmtrain(trainingFeatures, trainingLabels(:,d));
+end
+
+end
