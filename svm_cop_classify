@@ -1,0 +1,10 @@
+function [ predictedLabels ] = svm_cop_classify(img, svm, hogFeatureSize, cellSize)
+%UNTITLED5 Summary of this function goes here
+testFeatures = zeros(1, hogFeatureSize, 'single');
+img = imresize(img, [150 150]);
+testFeatures(1,:) = extractHOGFeatures(img,'CellSize',cellSize);
+for digit = 1:numel(svm)
+        predictedLabels(:,digit,1) = svmclassify(svm{digit}, testFeatures);
+end
+
+end
