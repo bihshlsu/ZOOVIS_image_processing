@@ -1,0 +1,14 @@
+function idx1 = remove_confusion( predictTags)
+%UNTITLED8 Summary of this function goes here
+%   Detailed explanation goes here
+idx = find(predictTags == 1);
+temp1 = length(idx);
+
+if isempty(idx) == 1;
+    idx1 = 0;
+    temp1 = 0;
+else
+        idx1 = idx;
+end;
+
+end
