@@ -1,0 +1,75 @@
+function y = binary( I )
+% output an binary image for an gray input image
+ 
+% compute histogram of the input image
+img=I; 
+gray=img;
+[hist,nn]=imhist(gray);
+hist=hist./sum(hist);
+
+score=zeros(256,1);   % compute flagA based on Otsu's inter-class variance
+for i=0:255
+    th=i;
+    w0=sum(hist(1:th));
+    w1=1-w0;
+    whist=hist.*nn;
+    ut=sum(whist);
+    u0=sum(whist(1:th))/w0;
+    u1=sum(whist(th+1:256))/w1;
+    detab=w0*(u0-ut)*(u0-ut)+w1*(u1-ut)*(u1-ut);
+    score(i+1,1)=detab;
+end
+flagA=max(score);
+
+for ii=1:3  % smooth hitogram three times
+    for jj=3:253
+        hist(jj)=(hist(jj-2)+hist(jj+2)+hist(jj-1)+hist(jj)+hist(jj+1))/5;
+        if hist(jj)<0.001
+            hist(jj)=0;
+        end
+    end
+end
+
+for j=1:5
+    hist(j)=0;
+end
+for j=250:256
+    hist(j)=0;
+end
+
+score=zeros(256,1);   % compute flagB based on Otsu's inter-class variance on the smoothed histogram
+for i=0:255
+    th=i;
+    w0=sum(hist(1:th));
+    w1=1-w0;
+    whist=hist.*nn;
+    ut=sum(whist);
+    u0=sum(whist(1:th))/w0;
+    u1=sum(whist(th+1:256))/w1;
+    detab=w0*(u0-ut)*(u0-ut)+w1*(u1-ut)*(u1-ut);
+    score(i+1,1)=detab;
+end
+flagB=max(score);
+
+k_p=0.6;  % Class A  % adjust parameter according to image property
+if flagA<900&&(flagA-flagB)<150
+    k_p=0.3;  % Class B
+end
+
+widowSize=77; % window size of local thresholding
+h=fspecial('average',widowSize);
+meanImg=filter2(h,gray,'same');
+nhood=ones(widowSize,widowSize);
+stdImg=stdfilt(gray,nhood);
+[m,n]=size(gray);
+
+% local binary based on Sauvola's method
+th=meanImg.*(1+k_p*(stdImg./128-1));
+img_copy=double(gray)-th;
+img_copy2=img_copy;
+img_copy2(img_copy>0)=0;
+img_copy2(img_copy<=0)=255;
+img_copy2=uint8(img_copy2);
+
+%     post-processing, remove area smaller than 400
+y = bwareaopen(img_copy2,50);
