@@ -1,0 +1,118 @@
+clc;
+clear all;
+% build svm classifier
+[ ImageList, LabelList] = construct_library( );
+[ svm, hogFeatureSize, cellSize ] = svm_classifier(ImageList, LabelList );
+[ ImageArrow, LabelArrow] = construct_arrow( );
+[ svm_Arrow, hogFeatureSize, cellSize ] = svm_classifier(ImageArrow, LabelArrow );
+[ ImageCop, LabelCop] = construct_cop( );
+[ svm_Cop, copFeatureSize, copSize ] = svm_cop_classifier(ImageCop, LabelCop );
+[ ImageJelly, LabelJelly] = construct_jelly( );
+[ svm_Jelly, hogFeatureSize, cellSize ] = svm_classifier(ImageJelly, LabelJelly );
+%load model_feature;
+% path to original image folder
+pathname = 'D:\ZOOVIS_2011_10_13\2011_October_testing_video\output\';
+%pathname = 'D:\ZOOVIS_2011_10_13\training\testing\';
+outtemp = 'D:\ZOOVIS_2011_10_13\2011_October_testing_video\cropped\group_';
+%outtemp = 'D:\ZOOVIS_2011_10_13\2011_October_testing_video\cropped\groupA_';
+dirname_in = strcat(pathname, '*.png');
+filenames = dir(dirname_in);
+im_num = size(filenames,1);
+for i = 75897:im_num;
+    path=fullfile(pathname, filenames(i).name);
+    imgtemp = imread(path);
+    %[thr,sorh,keepapp] = ddencmp('den','wv', imgtemp); 
+    %img = wpdencmp(imgtemp,'h',3,'db2','sure',thr,1);
+    %img = double(mat2gray(img));
+    img1 = imadjust(imgtemp);
+    img = enhance_image(imgtemp);
+    imgBW1 = binary_image(img);
+    %imshow(imgBW1, 'initialmagnification', 30); pause;
+    %imgBW1 = imclearborder(imgBW1);
+    imgBW2 = binary(img1);
+    %imshow(imgBW2, 'initialmagnification', 30); pause;
+    temp1 = regionprops(imgBW1);
+    temp_area = temp1.Area;
+    if isempty(temp1) == 1 || max(temp_area) >= 3000000;
+        idx = 1;
+    else
+        idx = 0;
+    end;
+    if idx == 1;
+        imgBW = imgBW2;
+    else
+        imgBW = imgBW1 | imgBW2;
+    end;
+    %imshow(imgBW, 'initialmagnification', 30); hold on;
+    STATS = regionprops(imgBW,'all');
+    length=size(STATS,1);
+    count = 1;
+ 
+    stemp = filenames(i).name(1:end-4);
+    for j=1:length
+        MajorLength=STATS(j).MajorAxisLength;
+        MinorLength=STATS(j).MinorAxisLength;
+        ratio = MajorLength/MinorLength;
+        if MajorLength >= 10 && MinorLength >= 5 && MajorLength <= 2000;
+            I_crop = imcrop(imgtemp, STATS(j).BoundingBox);
+            I_out = binary_cropped(I_crop); 
+            predictedLabels = svm_classify(I_out, svm, hogFeatureSize, cellSize);
+            %predictedLabels = svm_glac_classify(I_out, svm);
+            idx1 = remove_confusion(predictedLabels);
+            if isempty(idx1) == 1;
+                idx1 = 0;
+            end;
+                         if ismember(1, idx1) == 1;
+                idxArrow = svm_classify(I_out, svm_Arrow, hogFeatureSize, cellSize);
+                if isempty(idxArrow) == 1;
+                    idx1= 0;
+                    idxtemp = 0;
+                else
+                    idxtemp = find(idxArrow == 1);
+                end;
+                if ismember(1, idxtemp) == 1;
+                    idx1 = 1;
+                else
+                    idx1 = 0;
+                end;
+             end;
+
+            if ismember(2, idx1) == 1;
+                idxCop = svm_cop_classify(I_out, svm_Cop, copFeatureSize, copSize);
+                if isempty(idxCop) == 1;
+                    idx1 = 0;
+                    idxtemp = 0;
+                else
+                    idxtemp = find(idxCop == 1);
+                end;
+                if ismember(1, idxtemp) == 1 && ratio <= 6;
+                    idx1 = 2;
+                else
+                    idx1 = 0;
+                end;
+            end;
+            if ismember(3, idx1) == 1;
+                idxJelly = svm_classify(I_out, svm_Jelly, hogFeatureSize, cellSize);
+                if isempty(idxJelly) == 1;
+                    idx1 = 0;
+                    idxtemp = 0;
+                else
+                    idxtemp = find(idxJelly == 1);
+                end;
+               if ismember(2, idxtemp) == 1;
+                    idx1 = 3;
+                else
+                    idx1 = 0;
+                end;
+            end;
+
+        if idx1 >=1;
+                name_out = strcat(outtemp, num2str(idx1),'\', stemp,'s', num2str(j),'.tif');
+                imwrite(I_crop, name_out);
+                count = count + 1;
+         end;
+        end;
+    end;
+    clear img imgBW imgBW1 imgBW2 imgtemp STATS;
+    disp(i);
+end;
