@@ -1,0 +1,10 @@
+function img = enhance_image( I )
+%UNTITLED2 Summary of this function goes here
+%   Detailed explanation goes here
+se = strel('disk', 10);
+Ie = imerode(I, se);
+Iobr = imreconstruct(Ie, I);
+Iobrd = imdilate(Iobr, se);
+img = imreconstruct(Iobrd, Iobr);
+
+end
