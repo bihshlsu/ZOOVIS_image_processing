@@ -1,0 +1,25 @@
+function [ trainingImage, trainingLabels ] = construct_cop( )
+%UNTITLED Summary of this function goes here
+%   Detailed explanation goes here
+pathname = 'D:\ZOOVIS_2011_10_13\training\group_2\';
+%pathname = 'D:\ZOOVIS_2011_10_13\training\full_set_model_species\';
+dirname_in = strcat(pathname, '*.tif');
+filenames = dir(dirname_in);
+%group names should be consistent with the names of model species.
+groups ={'cop1', 'unknown'};
+trainingImage = [];
+trainingLabels = [];
+for i = 1:length(groups);
+    for j = 1:length(filenames);
+        trainingImage{j, i} = fullfile(pathname, filenames(j).name);
+        idx = strfind(trainingImage{j, i}, groups{1, i});
+        if isempty(idx) == 0;
+            trainingLabels(j, i) = 1;
+        else
+            trainingLabels(j, i) = 0;
+        end;
+    end;
+end;
+trainingLabels = logical(trainingLabels);
+
+end
